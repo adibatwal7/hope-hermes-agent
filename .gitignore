@@ -1,0 +1,32 @@
+# ---- Secrets: never commit ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ---- Hope's real config (may contain personal data) ----
+skills/*/config.json
+!skills/*/config.example.json
+
+# ---- Personal SOUL.md (only the template is public) ----
+soul/SOUL.md
+soul/*.private.md
+
+# ---- Local data ----
+data/
+*.db
+*.sqlite
+eval/data/labels.jsonl
+eval/data/feedback.jsonl
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ---- OS / editor ----
+.DS_Store
+.vscode/
