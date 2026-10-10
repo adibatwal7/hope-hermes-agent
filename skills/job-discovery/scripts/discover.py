@@ -77,7 +77,7 @@ def main():
         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
         rows = [
             (job["id"], now, job["title"], job["company"], job["url"])
-            for job, _, _ in kept
+            for job in new_jobs
         ]
         db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
         db.commit()
