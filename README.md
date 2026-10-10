@@ -1,3 +1,5 @@
+<img width="1672" height="941" alt="hermes-agent-thumb" src="https://github.com/user-attachments/assets/2bf2a3e0-1aeb-4d81-9849-5dc65c3e36a4" />
+
 # H.O.P.E — a self-improving personal AI agent
 
 Hope is my personal AI agent: it runs 24/7 on a VPS, talks to me on Telegram,
