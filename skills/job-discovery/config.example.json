@@ -79,7 +79,6 @@
             "fastapi",
             "postgres",
             "aws",
-            "stripe",
             "machine learning",
             "deep learning"
         ],
@@ -141,8 +140,8 @@
     "weights": {
         "title": 3.0,
         "skill": 0.4,
-        "skills_cap": 8,
-        "entry_level": 1.0,
+        "skills_cap": 5,
+        "entry_level": 2.0,
         "location": 0.8,
         "remote": 0.5
     }

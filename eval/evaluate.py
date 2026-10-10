@@ -2,6 +2,7 @@
 import argparse
 import copy
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -78,6 +79,31 @@ def report(name, order, ks):
     return " ".join(parts)
 
 
+def bootstrap_ap_diff(rows, profile, weights, n=1000, seed=0):
+    """95% CI for AP(hope) - AP(title-only), resampling jobs with replacement."""
+    rng = random.Random(seed)
+    diffs = []
+    for _ in range(n):
+        # TODO 1: sample = [rng.choice(rows) for _ in rows]
+        sample = [rng.choice(rows) for _ in rows]
+        # TODO 2: if no label == 1 in sample: continue   (AP undefined)
+        positives = sum(r["label"] for r in sample)
+        if positives == 0:
+            continue
+        # TODO 3: d = AP of ranked_order(sample, profile, weights)
+        #           - AP of ranked_order(sample, profile, title_only(weights))
+        #         diffs.append(d)
+        order_hope = ranked_order(sample, profile, weights)
+        order_title = ranked_order(sample, profile, title_only(weights))
+        diffs.append(average_precision(order_hope) - average_precision(order_title))
+    # TODO 4: diffs.sort(); lo = diffs[int(0.025 * len(diffs))]; hi = diffs[int(0.975 * len(diffs))]
+    #         return sum(diffs) / len(diffs), lo, hi
+    diffs.sort()
+    lo = diffs[int(0.025 * len(diffs))]
+    hi = diffs[int(0.975 * len(diffs))]
+    return sum(diffs) / len(diffs), lo, hi
+
+
 def resolve_path(p):
     path = Path(p)
     if not path.is_absolute():
@@ -92,6 +118,7 @@ def main():
     ap.add_argument("--k", type=int, nargs="+", default=[5, 10])
     ap.add_argument("--errors", action="store_true", help="show false positives and missed good fits")
     ap.add_argument("--labels", "--input", dest="labels", default="labels.jsonl", help="path to labelled data file (default: labels.jsonl)")
+    ap.add_argument("--bootstrap", action="store_true")
     args = ap.parse_args()
 
     config = json.loads((SKILL / "config.json").read_text())
@@ -128,6 +155,10 @@ def main():
             if job.get("label") == 1:
                 print(f"{score:>5}  {job['title']} ({job['company']})")
                 print(f"       {'; '.join(reasons)}")
+
+    if args.bootstrap:
+        mean, lo, hi = bootstrap_ap_diff(rows, profile, weights)
+        print(f"AP diff = {mean:+.3f} (95% CI {lo:+.3f} to {hi:+.3f})")
 
 
 if __name__ == "__main__":
