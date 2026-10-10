@@ -39,7 +39,7 @@ def main():
             #         ans = input("Apply? [y/n/s/q] ").strip().lower()
             while True:
                 ans = input("Apply? [y/n/s/q] ").strip().lower()
-                if ans in "ynsq":
+                if ans in ("y","n","s","q"):
                     break
                 print("Please answer y, n, s, or q.")
             # TODO 5: q -> break
@@ -54,7 +54,6 @@ def main():
             row = {**job, "label": 1 if ans == "y" else 0}
             f.write(json.dumps(row) + "\n")
             f.flush()
-            ...
 
     # TODO 6: reload OUT and print: total labelled, how many 1s, how many 0s
     labels = load_jsonl(OUT)
