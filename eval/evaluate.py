@@ -78,14 +78,25 @@ def report(name, order, ks):
     return " ".join(parts)
 
 
+def resolve_path(p):
+    path = Path(p)
+    if not path.is_absolute():
+        if path.parent == Path("."):
+            return ROOT / "eval" / "data" / path
+        return ROOT / path
+    return path
+
+
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description="Measure ranker quality on hand-labelled jobs vs. a title-only baseline.")
     ap.add_argument("--k", type=int, nargs="+", default=[5, 10])
-    ap.add_argument("--errors", action="store_true")
+    ap.add_argument("--errors", action="store_true", help="show false positives and missed good fits")
+    ap.add_argument("--labels", "--input", dest="labels", default="labels.jsonl", help="path to labelled data file (default: labels.jsonl)")
     args = ap.parse_args()
 
     config = json.loads((SKILL / "config.json").read_text())
-    rows = load_jsonl(LABELS)
+    labels_path = resolve_path(args.labels)
+    rows = load_jsonl(labels_path)
     profile, weights = config["profile"], config["weights"]
     positives = sum(r["label"] for r in rows)
     print(f"{len(rows)} labelled jobs, {positives} good fits "

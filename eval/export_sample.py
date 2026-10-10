@@ -1,4 +1,4 @@
-"""Export a fair, mixed sample of jobs for hand-labelling."""
+import argparse
 import json
 import random
 import sys
@@ -7,19 +7,45 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "job-discovery"
 sys.path.insert(0, str(SKILL / "scripts"))
+sys.path.insert(0, str(ROOT / "eval"))
 
 # pyrefly: ignore [missing-import]
 from rank import rank
 # pyrefly: ignore [missing-import]
 from sources import fetch_all
+from label import load_jsonl
 
-random.seed(42)   # same "random" sample every run -> reproducible
+random.seed(100)   # same "random" sample every run -> reproducible
+
+LABELS = ROOT / "eval" / "data" / "labels.jsonl"
+
+
+def resolve_path(p):
+    path = Path(p)
+    if not path.is_absolute():
+        if path.parent == Path("."):
+            return ROOT / "eval" / "data" / path
+        return ROOT / path
+    return path
 
 
 def main():
+    ap = argparse.ArgumentParser(description="Export a fair, mixed sample of jobs for hand-labelling.")
+    ap.add_argument("--out", default="to_label.jsonl", help="output file name or path (default: to_label.jsonl)")
+    ap.add_argument("--labels", default="labels.jsonl", help="already-labelled jobs file to exclude (default: labels.jsonl)")
+    args = ap.parse_args()
+
+    out = resolve_path(args.out)
+    labels_file = resolve_path(args.labels)
+
     config = json.loads((SKILL / "config.json").read_text())
     jobs, errors = fetch_all(config["companies"])      # NOTE: ignores seen.db on purpose
     kept, excluded = rank(jobs, config["profile"], config["weights"])
+
+    # TODO A: load already-labelled IDs from labels.jsonl and drop them before sampling
+    labelled_ids = {row["id"] for row in load_jsonl(labels_file)}
+    kept = [(job, score, reasons) for job, score, reasons in kept if job["id"] not in labelled_ids]
+    excluded = [(job, reason) for job, reason in excluded if job["id"] not in labelled_ids]
 
     # TODO 1: top = the first 25 items of `kept`
     top_n = 25
@@ -79,7 +105,6 @@ def main():
     # TODO 5: random.shuffle(sample) so you can't see which bucket a job is from
     #         while labelling (this prevents bias!)
     random.shuffle(sample)
-    out = ROOT / "eval" / "data" / "to_label.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w") as f:
         for row in sample:

@@ -1,4 +1,4 @@
-"""Hand-label sampled jobs: would I actually apply to this today? (y/n)"""
+import argparse
 import json
 import textwrap
 from pathlib import Path
@@ -17,14 +17,32 @@ def load_jsonl(path):
         return [json.loads(line) for line in f if line.strip()]
 
 
+def resolve_path(p):
+    path = Path(p)
+    if not path.is_absolute():
+        if path.parent == Path("."):
+            return ROOT / "eval" / "data" / path
+        return ROOT / path
+    return path
+
+
 def main():
-    jobs = load_jsonl(IN)
+    ap = argparse.ArgumentParser(description="Hand-label sampled jobs: would I actually apply to this today?")
+    ap.add_argument("--input", default="to_label.jsonl", help="input file with sampled jobs (default: to_label.jsonl)")
+    ap.add_argument("--labels", default="labels.jsonl", help="output file for saved labels (default: labels.jsonl)")
+    args = ap.parse_args()
+
+    in_path = resolve_path(args.input)
+    out_path = resolve_path(args.labels)
+
+    jobs = load_jsonl(in_path)
     # TODO 2: done_ids = a SET of row["id"] for rows already in OUT
-    done_ids = {job["id"] for job in load_jsonl(OUT)}
+    done_ids = {job["id"] for job in load_jsonl(out_path)}
     todo = [j for j in jobs if j["id"] not in done_ids]
     print(f"{len(done_ids)} done, {len(todo)} to go. Keys: y = apply, n = no, s = skip, q = quit\n")
 
-    with OUT.open("a") as f:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("a") as f:
         for i, job in enumerate(todo, 1):
             # TODO 3: print a header: f"[{i}/{len(todo)}] {title} @ {company} ({location})"
             #         then job["url"]
@@ -55,8 +73,8 @@ def main():
             f.write(json.dumps(row) + "\n")
             f.flush()
 
-    # TODO 6: reload OUT and print: total labelled, how many 1s, how many 0s
-    labels = load_jsonl(OUT)
+    # TODO 6: reload out_path and print: total labelled, how many 1s, how many 0s
+    labels = load_jsonl(out_path)
     print(f"\nTotal labelled: {len(labels)}")
     print(f"Apply: {sum(1 for j in labels if j['label'] == 1)}")
     print(f"No: {sum(1 for j in labels if j['label'] == 0)}")
