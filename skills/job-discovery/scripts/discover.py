@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from rank import rank
+from rank import rank, normalize
 from sources import fetch_all
 
 SKILL_DIR = Path(__file__).parent.parent          # skills/job-discovery/
@@ -26,6 +26,26 @@ def open_db(path):
     return db
 
 
+def collapse_duplicates(picks):
+    """Merge the same role posted in several cities into one entry."""
+    groups = {}
+    for job, score, reasons in picks:
+        key = (job["company"], normalize(job["title"]))
+        loc = job["location"] or "n/a"
+        if key not in groups:
+            # picks is already sorted by score descending, so the first
+            # posting encountered for each role already has the highest score.
+            groups[key] = [job, score, reasons, [loc]]
+        else:
+            if loc not in groups[key][3]:
+                groups[key][3].append(loc)
+
+    return [
+        ({**job, "location": " · ".join(locations)}, score, reasons)
+        for job, score, reasons, locations in groups.values()
+    ]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Find new jobs that fit my profile.")
     parser.add_argument("--top", type=int, help="how many jobs to show")
@@ -44,8 +64,8 @@ def main():
     new_jobs = [job for job in jobs if job["id"] not in seen_ids]
 
     kept, excluded = rank(new_jobs, config["profile"], config["weights"])
-    picks = [(job, score, reasons) for job, score, reasons in kept
-         if score >= config["min_score"]][:top_n]
+    good = [(j, s, r) for j, s, r in kept if s >= config["min_score"]]
+    picks = collapse_duplicates(good)[:top_n]
 
     # Print a short, Telegram-friendly report
     print(f"{len(jobs)} fetched · {len(new_jobs)} new · {len(excluded)} filtered out")
