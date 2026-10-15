@@ -71,18 +71,29 @@ def main():
     #         hint: db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
     #               rows = [(job["id"], now, job["title"], job["company"], job["url"]) for ...]
     #         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    #         then db.commit()  <- without this, nothing is saved!
+    #         then db.commit()  
 
     if not args.dry_run:
-        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        rows = [
-            (job["id"], now, job["title"], job["company"], job["url"])
-            for job in new_jobs
-        ]
-        db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
-        db.commit()
-    db.close()
+        # TODO 1: wrap the save block below in try/except sqlite3.Error as e:
+        #   try:
+        #       now = ...
 
+        #       rows = ...
+        #       db.executemany(...)
+        #       db.commit()
+        #   except sqlite3.Error as e:
+        #       print(f"\n⚠ Couldn't save seen jobs ({e}). Tomorrow may repeat today's roles.")
+        try:
+            now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            rows = [
+                (job["id"], now, job["title"], job["company"], job["url"])
+                for job in new_jobs
+            ]
+            db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
+            db.commit()
+        except sqlite3.Error as e:
+            print(f"\n⚠ Couldn't save seen jobs ({e}). Tomorrow may repeat today's roles.")    
+    db.close()
 
 if __name__ == "__main__":
     main()
