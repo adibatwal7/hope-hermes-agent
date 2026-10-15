@@ -15,10 +15,6 @@ def open_db(path):
     """Open (or create) the database and make sure the table exists."""
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path)
-    # TODO 1: run a CREATE TABLE IF NOT EXISTS statement for a table called
-    #         `seen` with columns: id TEXT PRIMARY KEY, first_seen TEXT,
-    #         title TEXT, company TEXT, url TEXT
-    #         hint: db.execute("""CREATE TABLE IF NOT EXISTS seen (...)""")
     db.execute("""CREATE TABLE IF NOT EXISTS seen (
         id TEXT PRIMARY KEY,
         first_seen TEXT,
@@ -43,15 +39,11 @@ def main():
     jobs, errors = fetch_all(config["companies"])
 
     db = open_db(SKILL_DIR / "data" / "seen.db")
-    # TODO 2: load all already-seen ids into a Python set
-    #         hint: {row[0] for row in db.execute("SELECT id FROM seen")}
     seen_ids = {row[0] for row in db.execute("SELECT id FROM seen")}
 
-    # TODO 3: keep only jobs whose id is NOT in seen_ids
     new_jobs = [job for job in jobs if job["id"] not in seen_ids]
 
     kept, excluded = rank(new_jobs, config["profile"], config["weights"])
-    # TODO 4: keep only jobs scoring at least config["min_score"], then take the top_n
     picks = [(job, score, reasons) for job, score, reasons in kept
          if score >= config["min_score"]][:top_n]
 
@@ -66,23 +58,9 @@ def main():
     if errors:
         print(f"\n⚠ {len(errors)} board(s) failed: {'; '.join(errors[:3])}")
 
-    # TODO 5: unless --dry-run, remember ALL ranked new jobs (not just picks)
-    #         so tomorrow only truly new ones appear.
-    #         hint: db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
-    #               rows = [(job["id"], now, job["title"], job["company"], job["url"]) for ...]
-    #         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    #         then db.commit()  
-
+    # Remember every new job (not just picks) so tomorrow shows only truly new ones.
+    # A failed save must not hide today's report, so warn instead of crashing.
     if not args.dry_run:
-        # TODO 1: wrap the save block below in try/except sqlite3.Error as e:
-        #   try:
-        #       now = ...
-
-        #       rows = ...
-        #       db.executemany(...)
-        #       db.commit()
-        #   except sqlite3.Error as e:
-        #       print(f"\n⚠ Couldn't save seen jobs ({e}). Tomorrow may repeat today's roles.")
         try:
             now = datetime.now(timezone.utc).isoformat(timespec="seconds")
             rows = [
@@ -92,8 +70,9 @@ def main():
             db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?,?,?,?)", rows)
             db.commit()
         except sqlite3.Error as e:
-            print(f"\n⚠ Couldn't save seen jobs ({e}). Tomorrow may repeat today's roles.")    
+            print(f"\n⚠ Couldn't save seen jobs ({e}). Tomorrow may repeat today's roles.")
     db.close()
+
 
 if __name__ == "__main__":
     main()

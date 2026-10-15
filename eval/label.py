@@ -9,8 +9,6 @@ OUT = ROOT / "eval" / "data" / "labels.jsonl"
 
 
 def load_jsonl(path):
-    # TODO 1: if path doesn't exist, return []
-    #         else return [json.loads(line) for each non-empty line]
     if not path.exists():
         return []
     with path.open("r") as f:
@@ -36,7 +34,6 @@ def main():
     out_path = resolve_path(args.labels)
 
     jobs = load_jsonl(in_path)
-    # TODO 2: done_ids = a SET of row["id"] for rows already in OUT
     done_ids = {job["id"] for job in load_jsonl(out_path)}
     todo = [j for j in jobs if j["id"] not in done_ids]
     print(f"{len(done_ids)} done, {len(todo)} to go. Keys: y = apply, n = no, s = skip, q = quit\n")
@@ -44,27 +41,15 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("a") as f:
         for i, job in enumerate(todo, 1):
-            # TODO 3: print a header: f"[{i}/{len(todo)}] {title} @ {company} ({location})"
-            #         then job["url"]
-            #         then the first ~600 chars of description, wrapped:
-            #         textwrap.fill(job["description"][:600], width=90)
-            #         DO NOT print score or bucket (blind labelling)
             print(f"[{i}/{len(todo)}] {job['title']} @ {job['company']} ({job['location']})")
             print(job["url"])
             print(textwrap.fill(job["description"][:600], width=90))
-            
-            # TODO 4: loop until the answer is one of y/n/s/q:
-            #         ans = input("Apply? [y/n/s/q] ").strip().lower()
+
             while True:
                 ans = input("Apply? [y/n/s/q] ").strip().lower()
                 if ans in ("y","n","s","q"):
                     break
                 print("Please answer y, n, s, or q.")
-            # TODO 5: q -> break
-            #         s -> continue (skipped jobs stay unlabelled; you'll see them next run)
-            #         y/n -> row = {**job, "label": 1 if ans == "y" else 0}
-            #                f.write(json.dumps(row) + "\n")
-            #                f.flush()   # saved immediately, even if you Ctrl+C
             if ans == "q":
                 break
             if ans == "s":
@@ -73,7 +58,6 @@ def main():
             f.write(json.dumps(row) + "\n")
             f.flush()
 
-    # TODO 6: reload out_path and print: total labelled, how many 1s, how many 0s
     labels = load_jsonl(out_path)
     print(f"\nTotal labelled: {len(labels)}")
     print(f"Apply: {sum(1 for j in labels if j['label'] == 1)}")
