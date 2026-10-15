@@ -29,6 +29,18 @@ def score_job(job, profile, weights):
         if has(title, term):
             return 0.0, [], f"title contains '{term}'"
 
+    allowed = profile.get("allowed_location_terms", [])
+    blocked = profile.get("blocked_location_terms", [])
+
+    if location.strip() == "":
+        pass
+    elif any(has(location, t) for t in allowed):
+        pass
+    elif any(has(location, t) for t in blocked):
+        return 0.0, [], f"location '{job['location']}' not eligible"
+    else:
+        pass
+
     score = 0.0
 
     for target in profile["target_titles"]:

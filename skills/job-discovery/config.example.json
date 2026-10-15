@@ -40,6 +40,41 @@
         ]
     },
     "profile": {
+        "allowed_location_terms": [
+            "united states",
+            "usa",
+            "us",
+            "remote",
+            "new york",
+            "san francisco",
+            "seattle",
+            "austin",
+            "boston",
+            "chicago",
+            "palo alto",
+            "mountain view",
+            "los angeles",
+            "denver",
+            "washington",
+            "atlanta",
+            "rochester"
+        ],
+        "blocked_location_terms": [
+            "zurich",
+            "london",
+            "dublin",
+            "toronto",
+            "brazil",
+            "tokyo",
+            "singapore",
+            "bangalore",
+            "berlin",
+            "paris",
+            "sydney",
+            "uk",
+            "canada",
+            "india"
+        ],
         "target_titles": [
             "new grad",
             "graduate",
